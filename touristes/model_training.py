@@ -12,11 +12,14 @@ from transformers import FeatureCreator
 
 import os
 from sqlalchemy import create_engine
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # --- Main Script ---
 
 # Load and prepare data from PostgreSQL
-db_url = os.environ.get('DATABASE_URL', 'postgresql://user:password@localhost:5432/recommendation_db')
+db_url = os.environ.get('DATABASE_URL', 'postgresql://postgres:Kxsd2882@localhost:5432/recommendation_db')
 engine = create_engine(db_url)
 
 query_tourisme = "SELECT * FROM tourisme_data;"
@@ -50,8 +53,8 @@ joblib.dump(le, 'label_encoder.joblib')
 X_train, X_test, y_train_encoded, y_test_encoded = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
 
 # Define column types for preprocessing
-categorical_features = ['Interet', 'Climat', 'Continent', 'Type_Destination', 'Interet_Continent']
-numerical_features = ['Age', 'Budget', 'Duree', 'Budget_per_day', 'Cout_de_la_Vie', 'Budget_Ajuste']
+categorical_features = ['Interet', 'Climat', 'continent', 'Type_Destination', 'Interet_Continent']
+numerical_features = ['age', 'budget', 'Duree', 'Budget_per_day', 'Cout_de_la_Vie', 'Budget_Ajuste']
 
 # Create preprocessing pipelines for numerical and categorical features
 numerical_transformer = StandardScaler()

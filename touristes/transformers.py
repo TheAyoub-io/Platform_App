@@ -12,12 +12,12 @@ class FeatureCreator(BaseEstimator, TransformerMixin):
         # Ensure columns are numeric and handle potential errors
         X_['Duree'] = pd.to_numeric(X_['Duree'], errors='coerce').fillna(0)
         X_['Cout_de_la_Vie'] = pd.to_numeric(X_['Cout_de_la_Vie'], errors='coerce').fillna(1)
-        X_['Budget'] = pd.to_numeric(X_['Budget'], errors='coerce').fillna(0)
+        X_['budget'] = pd.to_numeric(X_['budget'], errors='coerce').fillna(0)
 
         # Create budget-related features
-        X_['Budget_per_day'] = X_['Budget'] / (X_['Duree'] + 1e-6)
+        X_['Budget_per_day'] = X_['budget'] / (X_['Duree'] + 1e-6)
         X_['Budget_Ajuste'] = X_['Budget_per_day'] / (X_['Cout_de_la_Vie'] + 1e-6)
 
         # Create interaction feature
-        X_['Interet_Continent'] = X_['Interet'].astype(str) + '_' + X_['Continent'].astype(str)
+        X_['Interet_Continent'] = X_['Interet'].astype(str) + '_' + X_['continent'].astype(str)
         return X_
