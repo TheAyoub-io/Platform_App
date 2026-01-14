@@ -1,0 +1,59 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Destination Recommendation</title>
+</head>
+<body>
+    <h1>Travel Destination Recommendation</h1>
+    <form action="/recommend" method="post">
+        <label for="Age">Age:</label><br>
+        <input type="number" id="Age" name="Age" required><br><br>
+
+        <label for="Budget">Budget:</label><br>
+        <input type="number" id="Budget" name="Budget" required><br><br>
+
+        <label for="Interet">Interest:</label><br>
+        <select id="Interet" name="Interet" required>
+            <option value="Culture">Culture</option>
+            <option value="Nature">Nature</option>
+            <option value="Aventure">Aventure</option>
+            <option value="Plage">Plage</option>
+            <option value="Ville">Ville</option>
+        </select><br><br>
+
+        <label for="Duree">Duration (days):</label><br>
+        <input type="number" id="Duree" name="Duree" required><br><br>
+
+        <label for="Climat">Climate:</label><br>
+        <select id="Climat" name="Climat" required>
+            <option value="Chaud">Chaud</option>
+            <option value="Froid">Froid</option>
+            <option value="Tempéré">Tempéré</option>
+        </select><br><br>
+
+        <label for="Continent">Continent:</label><br>
+        <select id="Continent" name="Continent" required>
+            {% for continent in continents %}
+            <option value="{{ continent }}">{{ continent }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="Type_Destination">Destination Type:</label><br>
+        <select id="Type_Destination" name="Type_Destination" required>
+            {% for type in destination_types %}
+            <option value="{{ type }}">{{ type }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <input type="submit" value="Get Recommendation">
+    </form>
+
+    {% if recommendation %}
+    <h2>Recommended Destination:</h2>
+    <p>{{ recommendation }}</p>
+    {% endif %}
+</body>
+</html>
