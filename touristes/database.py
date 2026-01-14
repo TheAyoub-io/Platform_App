@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://user:password@db:5432/recommendation_db')
+
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:Kxsd2882@localhost:5432/recommendation_db')
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
