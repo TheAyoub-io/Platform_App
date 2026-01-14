@@ -6,68 +6,9 @@ import pandas as pd
 import logging
 from transformers import FeatureCreator
 from flask_sqlalchemy import SQLAlchemy
-from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
-from werkzeug.security import generate_password_hash, check_password_hash
-import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev_secret_key')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://user:password@db:5432/recommendation_db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-db = SQLAlchemy(app)
-login_manager = LoginManager(app)
-login_manager.login_view = 'login'
-
-
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(150), unique=True, nullable=False)
-    email = db.Column(db.String(150), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256), nullable=False)
-
-    def __repr__(self):
-        return f'<User {self.username}>'
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
-class Destination(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), unique=True, nullable=False)
-    continent = db.Column(db.String(50))
-    cost_of_living = db.Column(db.Float)
-    destination_type = db.Column(db.String(50))
-    tourism_data = db.relationship('TourismeData', backref='destination', lazy=True)
-
-    def __repr__(self):
-        return f'<Destination {self.name}>'
-
-class TourismeData(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    age = db.Column(db.Integer)
-    budget = db.Column(db.Float)
-    interest = db.Column(db.String(50))
-    duration = db.Column(db.Integer)
-    climate = db.Column(db.String(50))
-    travel_type = db.Column(db.String(50))
-    season = db.Column(db.String(50))
-    nationality = db.Column(db.String(50))
-    activity = db.Column(db.String(50))
-    destination_id = db.Column(db.Integer, db.ForeignKey('destination.id'), nullable=False)
-
-    def __repr__(self):
-        return f'<TourismeData {self.id}>'
-
 
 # Configure logging
 logging.basicConfig(level=logging.INFO,

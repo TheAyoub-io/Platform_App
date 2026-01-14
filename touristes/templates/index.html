@@ -4,11 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Travel Destination Recommendation</title>
+    <title>Travel Recommendation</title>
 </head>
 <body>
-    <h1>Travel Destination Recommendation</h1>
-    <form action="/recommend" method="post">
+    <h1>Sign Up</h1>
+    <form id="signupForm">
+        <input type="text" name="username" placeholder="Username" required><br>
+        <input type="email" name="email" placeholder="Email" required><br>
+        <input type="password" name="password" placeholder="Password" required><br>
+        <button type="submit">Sign Up</button>
+    </form>
+
+    <h1>Login</h1>
+    <form id="loginForm">
+        <input type="text" name="username" placeholder="Username" required><br>
+        <input type="password" name="password" placeholder="Password" required><br>
+        <button type="submit">Login</button>
+    </form>
+
+    <h1>Get a Recommendation</h1>
+    <form id="recommendationForm">
         <label for="Age">Age:</label><br>
         <input type="number" id="Age" name="Age" required><br><br>
 
@@ -16,56 +31,82 @@
         <input type="number" id="Budget" name="Budget" required><br><br>
 
         <label for="Interet">Interest:</label><br>
-        <select id="Interet" name="Interet" required>
-            {% for interest in interests %}
-            <option value="{{ interest }}">{{ interest }}</option>
-            {% endfor %}
-        </select><br><br>
+        <input type="text" id="Interet" name="Interet" required><br><br>
 
         <label for="Duree">Duration (days):</label><br>
         <input type="number" id="Duree" name="Duree" required><br><br>
 
         <label for="Climat">Climate:</label><br>
-        <select id="Climat" name="Climat" required>
-            {% for climate in climates %}
-            <option value="{{ climate }}">{{ climate }}</option>
-            {% endfor %}
-        </select><br><br>
+        <input type="text" id="Climat" name="Climat" required><br><br>
 
-        <label for="Type_Voyage">Travel Type:</label><br>
-        <select id="Type_Voyage" name="Type_Voyage" required>
-            {% for travel_type in travel_types %}
-            <option value="{{ travel_type }}">{{ travel_type }}</option>
-            {% endfor %}
-        </select><br><br>
+        <label for="Continent">Continent:</label><br>
+        <input type="text" id="Continent" name="Continent" required><br><br>
 
-        <label for="Saison">Season:</label><br>
-        <select id="Saison" name="Saison" required>
-            {% for season in seasons %}
-            <option value="{{ season }}">{{ season }}</option>
-            {% endfor %}
-        </select><br><br>
+        <label for="Type_Destination">Destination Type:</label><br>
+        <input type="text" id="Type_Destination" name="Type_Destination" required><br><br>
 
-        <label for="Nationalite">Nationality:</label><br>
-        <select id="Nationalite" name="Nationalite" required>
-            {% for nationality in nationalities %}
-            <option value="{{ nationality }}">{{ nationality }}</option>
-            {% endfor %}
-        </select><br><br>
-
-        <label for="Activite">Activity:</label><br>
-        <select id="Activite" name="Activite" required>
-            {% for activity in activities %}
-            <option value="{{ activity }}">{{ activity }}</option>
-            {% endfor %}
-        </select><br><br>
-
-        <input type="submit" value="Get Recommendation">
+        <button type="submit">Get Recommendation</button>
     </form>
 
-    {% if recommendation %}
-    <h2>Recommended Destination:</h2>
-    <p>{{ recommendation }}</p>
-    {% endif %}
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('signupForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            const response = await fetch('/signup/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result);
+        });
+
+        document.getElementById('loginForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const response = await fetch('/token', {
+                method: 'POST',
+                body: formData
+            });
+            const result = await response.json();
+            if (result.access_token) {
+                localStorage.setItem('token', result.access_token);
+                document.getElementById('result').innerText = 'Logged in successfully!';
+            } else {
+                document.getElementById('result').innerText = JSON.stringify(result);
+            }
+        });
+
+        document.getElementById('recommendationForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            if (!token) {
+                document.getElementById('result').innerText = 'You must be logged in to get a recommendation.';
+                return;
+            }
+
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+
+            // Convert numeric fields
+            data.Age = parseInt(data.Age);
+            data.Budget = parseInt(data.Budget);
+            data.Duree = parseInt(data.Duree);
+
+            const response = await fetch('/recommend/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            document.getElementById('result').innerText = JSON.stringify(result);
+        });
+    </script>
 </body>
 </html>
