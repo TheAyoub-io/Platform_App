@@ -9,5 +9,8 @@ __pycache__/
 # Dataset files
 *.csv
 
+# Model files
+*.joblib
+
 # Environment variables
 .env

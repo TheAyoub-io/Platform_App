@@ -8,6 +8,14 @@ from sklearn.neighbors import KNeighborsClassifier as KNN
 from sklearn.metrics import accuracy_score, classification_report
 import joblib
 import numpy as np
+
+
+# --- Main Script ---
+
+# Load and prepare data from CSV files
+df_tourisme = pd.read_csv('tourisme_dataset_cleaned.csv')
+df_destinations = pd.read_csv('destinations.csv')
+=======
 from transformers import FeatureCreator
 
 import os
@@ -36,6 +44,7 @@ df_tourisme.rename(columns={'interest': 'Interet', 'duration': 'Duree', 'climate
 dest_id_to_name = df_destinations.set_index('id')['Destination'].to_dict()
 df_tourisme['Destination'] = df_tourisme['destination_id'].map(dest_id_to_name)
 
+
 # Merge dataframes
 df = pd.merge(df_tourisme, df_destinations, on='Destination')
 df.drop_duplicates(inplace=True)
@@ -53,8 +62,13 @@ joblib.dump(le, 'label_encoder.joblib')
 X_train, X_test, y_train_encoded, y_test_encoded = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
 
 # Define column types for preprocessing
+
+categorical_features = ['Interet', 'Climat', 'Type_Voyage', 'Saison', 'Nationalite', 'Activite']
+numerical_features = ['Age', 'Budget', 'Duree']
+
 categorical_features = ['Interet', 'Climat', 'continent', 'Type_Destination', 'Interet_Continent']
 numerical_features = ['age', 'budget', 'Duree', 'Budget_per_day', 'Cout_de_la_Vie', 'Budget_Ajuste']
+
 
 # Create preprocessing pipelines for numerical and categorical features
 numerical_transformer = StandardScaler()
@@ -71,7 +85,6 @@ preprocessor = ColumnTransformer(
 
 # Create the full feature engineering and preprocessing pipeline
 full_pipeline = Pipeline(steps=[
-    ('feature_creator', FeatureCreator()),
     ('preprocessor', preprocessor)
 ])
 
