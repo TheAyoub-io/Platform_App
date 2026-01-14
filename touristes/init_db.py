@@ -1,5 +1,9 @@
 
 import pandas as pd
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from app import app, db, User, Destination, TourismeData
 
 def init_database():

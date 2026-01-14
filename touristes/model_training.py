@@ -9,11 +9,41 @@ from sklearn.metrics import accuracy_score, classification_report
 import joblib
 import numpy as np
 
+
 # --- Main Script ---
 
 # Load and prepare data from CSV files
 df_tourisme = pd.read_csv('tourisme_dataset_cleaned.csv')
 df_destinations = pd.read_csv('destinations.csv')
+=======
+from transformers import FeatureCreator
+
+import os
+from sqlalchemy import create_engine
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# --- Main Script ---
+
+# Load and prepare data from PostgreSQL
+db_url = os.environ.get('DATABASE_URL', 'postgresql://postgres:Kxsd2882@localhost:5432/recommendation_db')
+engine = create_engine(db_url)
+
+query_tourisme = "SELECT * FROM tourisme_data;"
+query_destinations = "SELECT * FROM destination;"
+
+df_tourisme = pd.read_sql(query_tourisme, engine)
+df_destinations = pd.read_sql(query_destinations, engine)
+
+# Rename columns to match original CSVs for merging
+df_destinations.rename(columns={'name': 'Destination', 'cost_of_living': 'Cout_de_la_Vie', 'destination_type': 'Type_Destination'}, inplace=True)
+df_tourisme.rename(columns={'interest': 'Interet', 'duration': 'Duree', 'climate': 'Climat'}, inplace=True)
+
+# Map destination_id to destination name
+dest_id_to_name = df_destinations.set_index('id')['Destination'].to_dict()
+df_tourisme['Destination'] = df_tourisme['destination_id'].map(dest_id_to_name)
+
 
 # Merge dataframes
 df = pd.merge(df_tourisme, df_destinations, on='Destination')
@@ -32,8 +62,13 @@ joblib.dump(le, 'label_encoder.joblib')
 X_train, X_test, y_train_encoded, y_test_encoded = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
 
 # Define column types for preprocessing
+
 categorical_features = ['Interet', 'Climat', 'Type_Voyage', 'Saison', 'Nationalite', 'Activite']
 numerical_features = ['Age', 'Budget', 'Duree']
+
+categorical_features = ['Interet', 'Climat', 'continent', 'Type_Destination', 'Interet_Continent']
+numerical_features = ['age', 'budget', 'Duree', 'Budget_per_day', 'Cout_de_la_Vie', 'Budget_Ajuste']
+
 
 # Create preprocessing pipelines for numerical and categorical features
 numerical_transformer = StandardScaler()
