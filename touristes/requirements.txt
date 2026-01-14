@@ -1,17 +1,10 @@
-blinker
-click
 contourpy
 cycler
-Flask
-Flask-Login
-Flask-SQLAlchemy
 fonttools
 greenlet
-itsdangerous
 Jinja2
 joblib
 kiwisolver
-MarkupSafe
 matplotlib
 numpy
 packaging
@@ -32,7 +25,6 @@ SQLAlchemy
 threadpoolctl
 typing_extensions
 tzdata
-Werkzeug
 xgboost
 fastapi
 uvicorn[standard]
