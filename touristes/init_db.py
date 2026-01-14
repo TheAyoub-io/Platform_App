@@ -11,7 +11,7 @@ def init_database():
 
         # Load data from CSVs
         destinations_df = pd.read_csv('destinations.csv')
-        tourisme_df = pd.read_csv('tourisme_dataset.csv')
+        tourisme_df = pd.read_csv('tourisme_dataset_cleaned.csv')
 
         # Populate Destinations table
         for _, row in destinations_df.iterrows():
@@ -36,6 +36,10 @@ def init_database():
                     interest=row['Interet'],
                     duration=row['Duree'],
                     climate=row['Climat'],
+                    travel_type=row['Type_Voyage'],
+                    season=row['Saison'],
+                    nationality=row['Nationalite'],
+                    activity=row['Activite'],
                     destination_id=dest_id
                 )
                 db.session.add(data)

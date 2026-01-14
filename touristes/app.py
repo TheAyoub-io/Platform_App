@@ -59,6 +59,10 @@ class TourismeData(db.Model):
     interest = db.Column(db.String(50))
     duration = db.Column(db.Integer)
     climate = db.Column(db.String(50))
+    travel_type = db.Column(db.String(50))
+    season = db.Column(db.String(50))
+    nationality = db.Column(db.String(50))
+    activity = db.Column(db.String(50))
     destination_id = db.Column(db.Integer, db.ForeignKey('destination.id'), nullable=False)
 
     def __repr__(self):
@@ -135,9 +139,13 @@ def logout():
 @app.route('/')
 def home():
     """Renders the home page."""
-    continents = ['Europe', 'Amerique du Nord', 'Asie', 'Oceanie', 'Afrique', 'Amerique du Sud']
-    destination_types = ['Megalopole', 'Historique', 'Ile']
-    return render_template('index.html', continents=continents, destination_types=destination_types)
+    interests = ['Culture', 'Ville', 'Plage', 'Aventure', 'Nature', 'Gastronomie', 'Shopping', 'Histoire']
+    climates = ['Tempéré', 'Chaud', 'Froid', 'Désertique']
+    travel_types = ['Solo', 'Couple', 'Famille', 'Amis']
+    seasons = ['Printemps', 'Été', 'Automne', 'Hiver']
+    nationalities = ['Français', 'Américain', 'Chinois', 'Allemand', 'Japonais', 'Britannique', 'Indien', 'Brésilien', 'Canadien', 'Australien']
+    activities = ['Musée', 'Gastronomie', 'Shopping', 'Surf', 'Histoire', 'Carnaval', 'Opéra', 'Architecture', 'Aurores boréales', 'Ski', 'Randonnée', 'Photographie', 'Tango', 'Romance', 'Musique']
+    return render_template('index.html', interests=interests, climates=climates, travel_types=travel_types, seasons=seasons, nationalities=nationalities, activities=activities)
 
 @app.route('/recommend', methods=['POST'])
 @login_required
@@ -147,17 +155,16 @@ def recommend():
         return render_template('index.html', error="Model is not available. Please check server logs.")
 
     try:
-        # TODO: Le Cout_de_la_Vie est nécessaire pour le FeatureCreator mais pas demandé dans le formulaire.
-        # Nous utilisons la valeur moyenne en attendant une meilleure solution.
         features = {
             'Age': [int(request.form['Age'])],
             'Budget': [int(request.form['Budget'])],
             'Interet': [request.form['Interet']],
             'Duree': [int(request.form['Duree'])],
             'Climat': [request.form['Climat']],
-            'Continent': [request.form['Continent']],
-            'Cout_de_la_Vie': [3.3],
-            'Type_Destination': [request.form['Type_Destination']]
+            'Type_Voyage': [request.form['Type_Voyage']],
+            'Saison': [request.form['Saison']],
+            'Nationalite': [request.form['Nationalite']],
+            'Activite': [request.form['Activite']]
         }
         input_df = pd.DataFrame(features)
         app.logger.info(f"Received user input: {features}")

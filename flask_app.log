@@ -1,0 +1,22 @@
+2026-01-14 15:08:15,341 ERROR: Error loading model files: [Errno 2] No such file or directory: 'recommendation_model.joblib'
+2026-01-14 15:09:39,533 INFO: Model, preprocessor, and label encoder loaded successfully.
+2026-01-14 15:09:39,540 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.2:5000
+2026-01-14 15:09:39,540 INFO: [33mPress CTRL+C to quit[0m
+2026-01-14 15:10:33,009 INFO: 127.0.0.1 - - [14/Jan/2026 15:10:33] "GET / HTTP/1.1" 200 -
+2026-01-14 15:14:17,696 INFO: Model, preprocessor, and label encoder loaded successfully.
+2026-01-14 15:14:17,703 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.2:5000
+2026-01-14 15:14:17,703 INFO: [33mPress CTRL+C to quit[0m
+2026-01-14 15:14:29,864 INFO: 127.0.0.1 - - [14/Jan/2026 15:14:29] "GET / HTTP/1.1" 200 -
+2026-01-14 15:17:32,558 INFO: Model, preprocessor, and label encoder loaded successfully.
+2026-01-14 15:17:32,565 INFO: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.2:5000
+2026-01-14 15:17:32,565 INFO: [33mPress CTRL+C to quit[0m
+2026-01-14 15:18:08,185 INFO: 127.0.0.1 - - [14/Jan/2026 15:18:08] "GET / HTTP/1.1" 200 -

@@ -17,11 +17,9 @@
 
         <label for="Interet">Interest:</label><br>
         <select id="Interet" name="Interet" required>
-            <option value="Culture">Culture</option>
-            <option value="Nature">Nature</option>
-            <option value="Aventure">Aventure</option>
-            <option value="Plage">Plage</option>
-            <option value="Ville">Ville</option>
+            {% for interest in interests %}
+            <option value="{{ interest }}">{{ interest }}</option>
+            {% endfor %}
         </select><br><br>
 
         <label for="Duree">Duration (days):</label><br>
@@ -29,22 +27,36 @@
 
         <label for="Climat">Climate:</label><br>
         <select id="Climat" name="Climat" required>
-            <option value="Chaud">Chaud</option>
-            <option value="Froid">Froid</option>
-            <option value="Tempéré">Tempéré</option>
-        </select><br><br>
-
-        <label for="Continent">Continent:</label><br>
-        <select id="Continent" name="Continent" required>
-            {% for continent in continents %}
-            <option value="{{ continent }}">{{ continent }}</option>
+            {% for climate in climates %}
+            <option value="{{ climate }}">{{ climate }}</option>
             {% endfor %}
         </select><br><br>
 
-        <label for="Type_Destination">Destination Type:</label><br>
-        <select id="Type_Destination" name="Type_Destination" required>
-            {% for type in destination_types %}
-            <option value="{{ type }}">{{ type }}</option>
+        <label for="Type_Voyage">Travel Type:</label><br>
+        <select id="Type_Voyage" name="Type_Voyage" required>
+            {% for travel_type in travel_types %}
+            <option value="{{ travel_type }}">{{ travel_type }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="Saison">Season:</label><br>
+        <select id="Saison" name="Saison" required>
+            {% for season in seasons %}
+            <option value="{{ season }}">{{ season }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="Nationalite">Nationality:</label><br>
+        <select id="Nationalite" name="Nationalite" required>
+            {% for nationality in nationalities %}
+            <option value="{{ nationality }}">{{ nationality }}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <label for="Activite">Activity:</label><br>
+        <select id="Activite" name="Activite" required>
+            {% for activity in activities %}
+            <option value="{{ activity }}">{{ activity }}</option>
             {% endfor %}
         </select><br><br>
 

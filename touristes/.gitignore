@@ -10,5 +10,8 @@ __pycache__/
 *.csv
 *.txt
 
+# Model files
+*.joblib
+
 # Environment variables
 .env
