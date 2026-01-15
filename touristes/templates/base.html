@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Travel Platform</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/i18next/i18next.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-i18next/jquery-i18next.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/i18next-browser-languagedetector/i18nextBrowserLanguageDetector.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/i18next-http-backend/i18nextHttpBackend.min.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="/" data-i18n="nav.brand">Travel Platform</a>
+        <div class="collapse navbar-collapse">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item"><a class="nav-link" href="/hotels" data-i18n="nav.hotels">Hotels</a></li>
+                <li class="nav-item"><a class="nav-link" href="/currency" data-i18n="nav.currency">Currency Converter</a></li>
+                <li class="nav-item"><a class="nav-link" href="/taxis" data-i18n="nav.taxis">Taxis</a></li>
+            </ul>
+        </div>
+        <div class="form-inline my-2 my-lg-0">
+            <select id="languageSwitcher" class="form-control">
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+            </select>
+        </div>
+    </nav>
+    <div class="container mt-4">
+        {% block content %}{% endblock %}
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            i18next
+                .use(i18nextHttpBackend)
+                .use(i18nextBrowserLanguageDetector)
+                .init({
+                    fallbackLng: 'en',
+                    backend: {
+                        loadPath: '/locales/{{lng}}.json'
+                    },
+                    detection: {
+                        order: ['querystring', 'cookie', 'localStorage', 'navigator'],
+                        caches: ['cookie']
+                    }
+                }, function(err, t) {
+                    jqueryI18next.init(i18next, $);
+                    $('body').localize();
+                });
+
+            $('#languageSwitcher').change(function() {
+                var lang = $(this).val();
+                i18next.changeLanguage(lang, function(err, t) {
+                    $('body').localize();
+                });
+            });
+        });
+    </script>
+</body>
+</html>

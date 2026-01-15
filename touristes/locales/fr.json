@@ -1,0 +1,48 @@
+{
+    "nav": {
+        "brand": "Plateforme de Voyage",
+        "hotels": "Hôtels",
+        "currency": "Convertisseur de Devises",
+        "taxis": "Taxis"
+    },
+    "login": {
+        "signup": "S'inscrire",
+        "login": "Se Connecter",
+        "username": "Nom d'utilisateur",
+        "email": "Email",
+        "password": "Mot de passe"
+    },
+    "recommendation": {
+        "title": "Obtenir une Recommandation",
+        "age": "Âge",
+        "budget": "Budget",
+        "interest": "Intérêt",
+        "duration": "Durée (jours)",
+        "climate": "Climat",
+        "continent": "Continent",
+        "destination_type": "Type de Destination",
+        "submit": "Obtenir une Recommandation"
+    },
+    "hotels": {
+        "title": "Réservations d'Hôtels",
+        "destination": "Destination",
+        "checkin": "Date d'arrivée",
+        "checkout": "Date de départ",
+        "search": "Rechercher",
+        "book": "Réserver maintenant"
+    },
+    "currency": {
+        "title": "Convertisseur de Devises",
+        "amount": "Montant",
+        "from": "De",
+        "to": "À",
+        "convert": "Convertir"
+    },
+    "taxis": {
+        "title": "Réservations de Taxis",
+        "pickup": "Lieu de prise en charge",
+        "destination": "Destination",
+        "fare": "Tarif proposé",
+        "book": "Réserver maintenant"
+    }
+}

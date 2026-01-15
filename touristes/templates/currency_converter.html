@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 data-i18n="currency.title">Currency Converter</h1>
+<form id="currencyConverterForm">
+    <div class="form-row">
+        <div class="form-group col-md-4">
+            <label for="amount" data-i18n="currency.amount">Amount</label>
+            <input type="number" class="form-control" id="amount" placeholder="100">
+        </div>
+        <div class="form-group col-md-4">
+            <label for="fromCurrency" data-i18n="currency.from">From</label>
+            <select id="fromCurrency" class="form-control"></select>
+        </div>
+        <div class="form-group col-md-4">
+            <label for="toCurrency" data-i18n="currency.to">To</label>
+            <select id="toCurrency" class="form-control"></select>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary" data-i18n="currency.convert">Convert</button>
+</form>
+<h2 id="conversionResult" class="mt-4"></h2>
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        try {
+            const response = await fetch('/api/currency/rates');
+            const data = await response.json();
+            const currencies = Object.keys(data.conversion_rates);
+
+            const fromCurrency = document.getElementById('fromCurrency');
+            const toCurrency = document.getElementById('toCurrency');
+
+            currencies.forEach(currency => {
+                fromCurrency.innerHTML += `<option value="${currency}">${currency}</option>`;
+                toCurrency.innerHTML += `<option value="${currency}">${currency}</option>`;
+            });
+        } catch (error) {
+            console.error('Error fetching currencies:', error);
+        }
+    });
+
+    document.getElementById('currencyConverterForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const amount = document.getElementById('amount').value;
+        const from = document.getElementById('fromCurrency').value;
+        const to = document.getElementById('toCurrency').value;
+
+        try {
+            const response = await fetch(`/api/currency/convert?amount=${amount}&from_currency=${from}&to_currency=${to}`);
+            const data = await response.json();
+            const result = data.conversion_result;
+            document.getElementById('conversionResult').innerText = `${amount} ${from} = ${result.toFixed(2)} ${to}`;
+        } catch (error) {
+            console.error('Error during conversion:', error);
+        }
+    });
+</script>
+{% endblock %}
