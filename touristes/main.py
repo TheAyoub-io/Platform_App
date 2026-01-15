@@ -2,6 +2,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
 from jose import jwt, JWTError
 import pandas as pd
 import joblib
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from pathlib import Path
 import requests
 import os
+from cachetools import TTLCache
 
 import crud, database, schemas, security
 from database import SessionLocal, engine
@@ -19,6 +21,9 @@ app = FastAPI()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
+# Cache for currency rates (TTL: 1 hour)
+currency_cache = TTLCache(maxsize=10, ttl=3600)
+
 # Load models
 model = joblib.load('recommendation_model.joblib')
 preprocessor = joblib.load('preprocessor.joblib')
@@ -28,11 +33,22 @@ templates = Jinja2Templates(directory="templates")
 
 # In-memory database for hotels
 hotels_db = [
-    {"name": "Grand Hyatt", "rating": 5},
-    {"name": "The Ritz-Carlton", "rating": 5},
-    {"name": "Holiday Inn", "rating": 4},
-    {"name": "Marriott", "rating": 4},
+    {"id": 1, "name": "Grand Hyatt", "rating": 5, "destination": "Paris", "availability": 10},
+    {"id": 2, "name": "The Ritz-Carlton", "rating": 5, "destination": "Paris", "availability": 5},
+    {"id": 3, "name": "Holiday Inn", "rating": 4, "destination": "New York", "availability": 20},
+    {"id": 4, "name": "Marriott", "rating": 4, "destination": "New York", "availability": 15},
+    {"id": 5, "name": "Hotel Shibuya", "rating": 4, "destination": "Tokyo", "availability": 8},
 ]
+
+
+# Pydantic models for request bodies
+class HotelBookingRequest(BaseModel):
+    hotel_id: int
+
+class TaxiBookingRequest(BaseModel):
+    pickup: str
+    destination: str
+    fare: float
 
 
 # Dependency to get the DB session
@@ -84,7 +100,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/recommend/")
-def recommend(rec_request: schemas.RecommendationRequest, current_user: database.User = Depends(get_current_user)):
+def recommend(request: Request, rec_request: schemas.RecommendationRequest, current_user: database.User = Depends(get_current_user)):
     try:
         features = {
             'Age': [rec_request.Age],
@@ -101,34 +117,60 @@ def recommend(rec_request: schemas.RecommendationRequest, current_user: database
         prediction_encoded = model.predict(input_processed)
         prediction = label_encoder.inverse_transform(prediction_encoded)
         
-        return templates.TemplateResponse("recommendation_result.html", {"request": {}, "recommendation": prediction[0]})
+        return templates.TemplateResponse("recommendation_result.html", {"request": request, "recommendation": prediction[0]})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Page serving endpoints
 @app.get("/")
 def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    continents = ['Europe', 'Amerique du Nord', 'Asie', 'Oceanie', 'Afrique', 'Amerique du Sud']
+    destination_types = ['Megalopole', 'Historique', 'Ile']
+    return templates.TemplateResponse("index.html", {"request": request, "continents": continents, "destination_types": destination_types})
 
 @app.get("/login")
 def login(request: Request):
     return templates.TemplateResponse("login.html", {"request": request})
 
 @app.get("/hotels")
-def hotels(request: Request):
-    return templates.TemplateResponse("hotels.html", {"request": request, "hotels": hotels_db})
+def hotels_page(request: Request):
+    return templates.TemplateResponse("hotels.html", {"request": request})
 
 @app.get("/currency")
-def currency(request: Request):
+def currency_page(request: Request):
     return templates.TemplateResponse("currency_converter.html", {"request": request})
 
 @app.get("/taxis")
-def taxis(request: Request):
+def taxis_page(request: Request):
     return templates.TemplateResponse("taxis.html", {"request": request})
 
-@app.post("/taxis")
-async def book_taxi(request: Request):
-    return JSONResponse(content={"message": "Driver found! Your ride is on the way."})
 
+# API Endpoints for services
+
+# Hotel API
+@app.get("/api/hotels/search")
+async def search_hotels(destination: str):
+    results = [hotel for hotel in hotels_db if hotel["destination"].lower() == destination.lower()]
+    return JSONResponse(content=results)
+
+@app.post("/api/hotels/book")
+async def book_hotel(booking: HotelBookingRequest):
+    hotel_id = booking.hotel_id
+    hotel = next((h for h in hotels_db if h["id"] == hotel_id), None)
+    if not hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found")
+    if hotel["availability"] <= 0:
+        raise HTTPException(status_code=400, detail="No rooms available")
+
+    hotel["availability"] -= 1
+    return JSONResponse(content={"message": f"Successfully booked a room at {hotel['name']}. Remaining rooms: {hotel['availability']}"})
+
+# Taxi API
+@app.post("/api/taxis/book")
+async def book_taxi(booking: TaxiBookingRequest):
+    return JSONResponse(content={"message": f"Driver found for your ride from {booking.pickup} to {booking.destination}! Your ride is on the way."})
+
+# Locale endpoint
 @app.get("/locales/{lng}.json")
 async def read_locale(lng: str):
     file_path = f"locales/{lng}.json"
@@ -136,24 +178,53 @@ async def read_locale(lng: str):
         raise HTTPException(status_code=404, detail="Locale not found")
     return FileResponse(file_path)
 
+# Currency Converter API Proxy
 @app.get("/api/currency/rates")
 async def get_currency_rates():
+    cache_key = "currency_rates_USD"
+    if cache_key in currency_cache:
+        return JSONResponse(content=currency_cache[cache_key])
+
     api_key = os.environ.get("EXCHANGE_RATE_API_KEY", "YOUR_API_KEY")
+    if api_key == "YOUR_API_KEY":
+        raise HTTPException(status_code=500, detail="API key for currency conversion is not configured.")
+
     url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/USD"
     try:
         response = requests.get(url)
         response.raise_for_status()
-        return JSONResponse(content=response.json())
+        data = response.json()
+        if data.get("result") == "success":
+            currency_cache[cache_key] = data
+            return JSONResponse(content=data)
+        else:
+            raise HTTPException(status_code=502, detail="Failed to fetch valid data from currency API.")
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=503, detail=f"Error communicating with currency API: {e}")
 
 @app.get("/api/currency/convert")
 async def convert_currency(amount: float, from_currency: str, to_currency: str):
-    api_key = os.environ.get("EXCHANGE_RATE_API_KEY", "YOUR_API_KEY")
-    url = f"https://v6.exchangerate-api.com/v6/{api_key}/pair/{from_currency}/{to_currency}/{amount}"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return JSONResponse(content=response.json())
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    cache_key = "currency_rates_USD"
+
+    if cache_key not in currency_cache:
+        await get_currency_rates()
+
+    rates_data = currency_cache.get(cache_key)
+    if not rates_data or "conversion_rates" not in rates_data:
+        raise HTTPException(status_code=500, detail="Currency rates are not available in cache.")
+
+    rates = rates_data["conversion_rates"]
+
+    if from_currency not in rates or to_currency not in rates:
+        raise HTTPException(status_code=404, detail=f"Currency code not found. Cannot convert from {from_currency} to {to_currency}.")
+
+    amount_in_usd = amount / rates[from_currency]
+    converted_amount = amount_in_usd * rates[to_currency]
+
+    return JSONResponse(content={
+        "result": "success",
+        "from": from_currency,
+        "to": to_currency,
+        "amount": amount,
+        "conversion_result": converted_amount
+    })

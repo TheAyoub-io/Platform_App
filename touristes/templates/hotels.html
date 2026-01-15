@@ -3,40 +3,90 @@
 <h1 data-i18n="hotels.title">Hotel Reservations</h1>
 <form id="hotelSearchForm">
     <div class="form-row">
-        <div class="form-group col-md-6">
+        <div class="form-group col-md-9">
             <label for="destination" data-i18n="hotels.destination">Destination</label>
-            <input type="text" class="form-control" id="destination" placeholder="e.g., Paris, New York">
+            <input type="text" class="form-control" id="destination" placeholder="e.g., Paris, New York, Tokyo" required>
         </div>
-        <div class="form-group col-md-3">
-            <label for="checkin" data-i18n="hotels.checkin">Check-in Date</label>
-            <input type="date" class="form-control" id="checkin">
-        </div>
-        <div class="form-group col-md-3">
-            <label for="checkout" data-i18n="hotels.checkout">Check-out Date</label>
-            <input type="date" class="form-control" id="checkout">
+        <div class="form-group col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary w-100" data-i18n="hotels.search">Search</button>
         </div>
     </div>
-    <button type="submit" class="btn btn-primary" data-i18n="hotels.search">Search</button>
 </form>
 <hr>
 <div id="hotelListings">
-    {% for hotel in hotels %}
-    <div class="card mt-3">
-        <div class="card-body">
-            <h5 class="card-title">{{ hotel.name }}</h5>
-            <p class="card-text">
-                {% for i in range(hotel.rating) %}
-                ★
-                {% endfor %}
-                {% if hotel.rating < 5 %}
-                {% for i in range(5 - hotel.rating) %}
-                ☆
-                {% endfor %}
-                {% endif %}
-            </p>
-            <a href="#" class="btn btn-success" data-i18n="hotels.book">Book Now</a>
-        </div>
-    </div>
-    {% endfor %}
+    <!-- Hotel search results will be dynamically inserted here -->
 </div>
+<div id="bookingStatus" class="mt-3"></div>
+
+<script>
+    document.getElementById('hotelSearchForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const destination = document.getElementById('destination').value;
+        const listingsContainer = document.getElementById('hotelListings');
+        const bookingStatus = document.getElementById('bookingStatus');
+
+        listingsContainer.innerHTML = '<p>Searching...</p>';
+        bookingStatus.innerHTML = '';
+
+        try {
+            const response = await fetch(`/api/hotels/search?destination=${destination}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch hotels.');
+            }
+            const hotels = await response.json();
+
+            listingsContainer.innerHTML = '';
+            if (hotels.length === 0) {
+                listingsContainer.innerHTML = '<p>No hotels found for this destination.</p>';
+                return;
+            }
+
+            hotels.forEach(hotel => {
+                const stars = '★'.repeat(hotel.rating) + '☆'.repeat(5 - hotel.rating);
+                const hotelCard = `
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h5 class="card-title">${hotel.name}</h5>
+                            <p class="card-text">${stars}</p>
+                            <p class="card-text">Rooms available: ${hotel.availability}</p>
+                            <button class="btn btn-success" onclick="bookHotel(${hotel.id})" data-i18n="hotels.book">Book Now</button>
+                        </div>
+                    </div>
+                `;
+                listingsContainer.insertAdjacentHTML('beforeend', hotelCard);
+            });
+
+        } catch (error) {
+            listingsContainer.innerHTML = `<p class="text-danger">${error.message}</p>`;
+        }
+    });
+
+    async function bookHotel(hotelId) {
+        const bookingStatus = document.getElementById('bookingStatus');
+        bookingStatus.innerHTML = '';
+
+        try {
+            const response = await fetch('/api/hotels/book', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ hotel_id: hotelId })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.detail || 'Booking failed.');
+            }
+
+            bookingStatus.innerHTML = `<div class="alert alert-success">${result.message}</div>`;
+            // Refresh the search to show updated availability
+            document.getElementById('hotelSearchForm').dispatchEvent(new Event('submit'));
+
+        } catch (error) {
+            bookingStatus.innerHTML = `<div class="alert alert-danger">${error.message}</div>`;
+        }
+    }
+</script>
 {% endblock %}
