@@ -1,31 +1,29 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from fastapi.responses import FileResponse, JSONResponse
-from pydantic import BaseModel
+from fastapi.responses import FileResponse
 from jose import jwt, JWTError
 import pandas as pd
 import joblib
 from sqlalchemy.orm import Session
 from pathlib import Path
-import requests
-import os
-from cachetools import TTLCache
-from typing import List
-from datetime import date
 
 import crud, database, schemas, security
 from database import SessionLocal, engine
+from .routers import hotels, taxis, currency
 
 # Create all tables
 database.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+# Include routers
+app.include_router(hotels.router)
+app.include_router(taxis.router)
+app.include_router(currency.router)
 
-# Cache for currency rates (TTL: 1 hour)
-currency_cache = TTLCache(maxsize=10, ttl=3600)
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # Load models
 model = joblib.load('recommendation_model.joblib')
@@ -33,12 +31,6 @@ preprocessor = joblib.load('preprocessor.joblib')
 label_encoder = joblib.load('label_encoder.joblib')
 
 templates = Jinja2Templates(directory="templates")
-
-# Pydantic models for request bodies
-class TaxiBookingRequest(BaseModel):
-    pickup: str
-    destination: str
-    fare: float
 
 # Dependency to get the DB session
 def get_db():
@@ -133,30 +125,6 @@ def currency_page(request: Request):
 def taxis_page(request: Request):
     return templates.TemplateResponse("taxis.html", {"request": request})
 
-# API Endpoints for services
-
-# Hotel API
-@app.get("/api/hotels/search", response_model=List[schemas.Hotel])
-async def search_hotels(destination: str, db: Session = Depends(get_db)):
-    hotels = crud.get_hotels_by_destination(db, destination=destination)
-    return hotels
-
-@app.post("/api/hotels/book", response_model=schemas.Booking)
-async def book_hotel(booking: schemas.BookingCreate, db: Session = Depends(get_db), current_user: database.User = Depends(get_current_user)):
-    if booking.end_date <= booking.start_date:
-        raise HTTPException(status_code=400, detail="End date must be after start date.")
-
-    db_booking, error_msg = crud.create_booking(db=db, user_id=current_user.id, booking=booking)
-    if error_msg:
-        raise HTTPException(status_code=400, detail=error_msg)
-    return db_booking
-
-# Taxi API
-# Note: This is a mock implementation.
-@app.post("/api/taxis/book")
-async def book_taxi(booking: TaxiBookingRequest):
-    return JSONResponse(content={"message": f"Driver found for your ride from {booking.pickup} to {booking.destination}! Your ride is on the way."})
-
 # Locale endpoint
 @app.get("/locales/{lng}.json")
 async def read_locale(lng: str):
@@ -164,54 +132,3 @@ async def read_locale(lng: str):
     if not Path(file_path).is_file():
         raise HTTPException(status_code=404, detail="Locale not found")
     return FileResponse(file_path)
-
-# Currency Converter API Proxy
-@app.get("/api/currency/rates")
-async def get_currency_rates():
-    cache_key = "currency_rates_USD"
-    if cache_key in currency_cache:
-        return JSONResponse(content=currency_cache[cache_key])
-
-    api_key = os.environ.get("EXCHANGE_RATE_API_KEY", "YOUR_API_KEY")
-    if api_key == "YOUR_API_KEY":
-        raise HTTPException(status_code=500, detail="API key for currency conversion is not configured.")
-
-    url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/USD"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        data = response.json()
-        if data.get("result") == "success":
-            currency_cache[cache_key] = data
-            return JSONResponse(content=data)
-        else:
-            raise HTTPException(status_code=502, detail="Failed to fetch valid data from currency API.")
-    except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=503, detail=f"Error communicating with currency API: {e}")
-
-@app.get("/api/currency/convert")
-async def convert_currency(amount: float, from_currency: str, to_currency: str):
-    cache_key = "currency_rates_USD"
-
-    if cache_key not in currency_cache:
-        await get_currency_rates()
-
-    rates_data = currency_cache.get(cache_key)
-    if not rates_data or "conversion_rates" not in rates_data:
-        raise HTTPException(status_code=500, detail="Currency rates are not available in cache.")
-
-    rates = rates_data["conversion_rates"]
-
-    if from_currency not in rates or to_currency not in rates:
-        raise HTTPException(status_code=404, detail=f"Currency code not found. Cannot convert from {from_currency} to {to_currency}.")
-
-    amount_in_usd = amount / rates[from_currency]
-    converted_amount = amount_in_usd * rates[to_currency]
-
-    return JSONResponse(content={
-        "result": "success",
-        "from": from_currency,
-        "to": to_currency,
-        "amount": amount,
-        "conversion_result": converted_amount
-    })
