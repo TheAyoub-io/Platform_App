@@ -11,10 +11,13 @@ from pathlib import Path
 import requests
 import os
 from cachetools import TTLCache
+from typing import List
+from datetime import date
 
 import crud, database, schemas, security
 from database import SessionLocal, engine
 
+# Create all tables
 database.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
@@ -31,25 +34,11 @@ label_encoder = joblib.load('label_encoder.joblib')
 
 templates = Jinja2Templates(directory="templates")
 
-# In-memory database for hotels
-hotels_db = [
-    {"id": 1, "name": "Grand Hyatt", "rating": 5, "destination": "Paris", "availability": 10},
-    {"id": 2, "name": "The Ritz-Carlton", "rating": 5, "destination": "Paris", "availability": 5},
-    {"id": 3, "name": "Holiday Inn", "rating": 4, "destination": "New York", "availability": 20},
-    {"id": 4, "name": "Marriott", "rating": 4, "destination": "New York", "availability": 15},
-    {"id": 5, "name": "Hotel Shibuya", "rating": 4, "destination": "Tokyo", "availability": 8},
-]
-
-
 # Pydantic models for request bodies
-class HotelBookingRequest(BaseModel):
-    hotel_id: int
-
 class TaxiBookingRequest(BaseModel):
     pickup: str
     destination: str
     fare: float
-
 
 # Dependency to get the DB session
 def get_db():
@@ -117,7 +106,7 @@ def recommend(request: Request, rec_request: schemas.RecommendationRequest, curr
         prediction_encoded = model.predict(input_processed)
         prediction = label_encoder.inverse_transform(prediction_encoded)
         
-        return templates.TemplateResponse("recommendation_result.html", {"request": request, "recommendation": prediction[0]})
+        return templates.TemplateResponse("_recommendation_result.html", {"request": request, "recommendation": prediction[0]})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -144,28 +133,26 @@ def currency_page(request: Request):
 def taxis_page(request: Request):
     return templates.TemplateResponse("taxis.html", {"request": request})
 
-
 # API Endpoints for services
 
 # Hotel API
-@app.get("/api/hotels/search")
-async def search_hotels(destination: str):
-    results = [hotel for hotel in hotels_db if hotel["destination"].lower() == destination.lower()]
-    return JSONResponse(content=results)
+@app.get("/api/hotels/search", response_model=List[schemas.Hotel])
+async def search_hotels(destination: str, db: Session = Depends(get_db)):
+    hotels = crud.get_hotels_by_destination(db, destination=destination)
+    return hotels
 
-@app.post("/api/hotels/book")
-async def book_hotel(booking: HotelBookingRequest):
-    hotel_id = booking.hotel_id
-    hotel = next((h for h in hotels_db if h["id"] == hotel_id), None)
-    if not hotel:
-        raise HTTPException(status_code=404, detail="Hotel not found")
-    if hotel["availability"] <= 0:
-        raise HTTPException(status_code=400, detail="No rooms available")
+@app.post("/api/hotels/book", response_model=schemas.Booking)
+async def book_hotel(booking: schemas.BookingCreate, db: Session = Depends(get_db), current_user: database.User = Depends(get_current_user)):
+    if booking.end_date <= booking.start_date:
+        raise HTTPException(status_code=400, detail="End date must be after start date.")
 
-    hotel["availability"] -= 1
-    return JSONResponse(content={"message": f"Successfully booked a room at {hotel['name']}. Remaining rooms: {hotel['availability']}"})
+    db_booking, error_msg = crud.create_booking(db=db, user_id=current_user.id, booking=booking)
+    if error_msg:
+        raise HTTPException(status_code=400, detail=error_msg)
+    return db_booking
 
 # Taxi API
+# Note: This is a mock implementation.
 @app.post("/api/taxis/book")
 async def book_taxi(booking: TaxiBookingRequest):
     return JSONResponse(content={"message": f"Driver found for your ride from {booking.pickup} to {booking.destination}! Your ride is on the way."})
