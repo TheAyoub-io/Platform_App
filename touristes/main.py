@@ -1,10 +1,14 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.templating import Jinja2Templates
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import jwt
+from fastapi.responses import FileResponse, JSONResponse
+from jose import jwt, JWTError
 import pandas as pd
 import joblib
 from sqlalchemy.orm import Session
+from pathlib import Path
+import requests
+import os
 
 import crud, database, schemas, security
 from database import SessionLocal, engine
@@ -22,7 +26,15 @@ label_encoder = joblib.load('label_encoder.joblib')
 
 templates = Jinja2Templates(directory="templates")
 
-# Dependency to get the DB session
+# In-memory database for hotels
+hotels_db = [
+    {"name": "Grand Hyatt", "rating": 5},
+    {"name": "The Ritz-Carlton", "rating": 5},
+    {"name": "Holiday Inn", "rating": 4},
+    {"name": "Marriott", "rating": 4},
+]
+
+
 # Dependency to get the DB session
 def get_db():
     db = SessionLocal()
@@ -72,7 +84,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     return {"access_token": access_token, "token_type": "bearer"}
 
 @app.post("/recommend/")
-def recommend(request: Request, rec_request: schemas.RecommendationRequest, current_user: database.User = Depends(get_current_user)):
+def recommend(rec_request: schemas.RecommendationRequest, current_user: database.User = Depends(get_current_user)):
     try:
         features = {
             'Age': [rec_request.Age],
@@ -89,14 +101,59 @@ def recommend(request: Request, rec_request: schemas.RecommendationRequest, curr
         prediction_encoded = model.predict(input_processed)
         prediction = label_encoder.inverse_transform(prediction_encoded)
         
-        return templates.TemplateResponse("index.html", {"request": request, "recommendation": prediction[0]})
+        return templates.TemplateResponse("recommendation_result.html", {"request": {}, "recommendation": prediction[0]})
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 def home(request: Request):
-    continents = ['Europe', 'Amerique du Nord', 'Asie', 'Oceanie', 'Afrique', 'Amerique du Sud']
-    destination_types = ['Megalopole', 'Historique', 'Ile']
-    return templates.TemplateResponse("index.html", {"request": request, "continents": continents, "destination_types": destination_types})
+    return templates.TemplateResponse("index.html", {"request": request})
 
-    
+@app.get("/login")
+def login(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/hotels")
+def hotels(request: Request):
+    return templates.TemplateResponse("hotels.html", {"request": request, "hotels": hotels_db})
+
+@app.get("/currency")
+def currency(request: Request):
+    return templates.TemplateResponse("currency_converter.html", {"request": request})
+
+@app.get("/taxis")
+def taxis(request: Request):
+    return templates.TemplateResponse("taxis.html", {"request": request})
+
+@app.post("/taxis")
+async def book_taxi(request: Request):
+    return JSONResponse(content={"message": "Driver found! Your ride is on the way."})
+
+@app.get("/locales/{lng}.json")
+async def read_locale(lng: str):
+    file_path = f"locales/{lng}.json"
+    if not Path(file_path).is_file():
+        raise HTTPException(status_code=404, detail="Locale not found")
+    return FileResponse(file_path)
+
+@app.get("/api/currency/rates")
+async def get_currency_rates():
+    api_key = os.environ.get("EXCHANGE_RATE_API_KEY", "YOUR_API_KEY")
+    url = f"https://v6.exchangerate-api.com/v6/{api_key}/latest/USD"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return JSONResponse(content=response.json())
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/currency/convert")
+async def convert_currency(amount: float, from_currency: str, to_currency: str):
+    api_key = os.environ.get("EXCHANGE_RATE_API_KEY", "YOUR_API_KEY")
+    url = f"https://v6.exchangerate-api.com/v6/{api_key}/pair/{from_currency}/{to_currency}/{amount}"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        return JSONResponse(content=response.json())
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=str(e))

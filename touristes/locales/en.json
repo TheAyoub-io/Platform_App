@@ -1,0 +1,48 @@
+{
+    "nav": {
+        "brand": "Travel Platform",
+        "hotels": "Hotels",
+        "currency": "Currency Converter",
+        "taxis": "Taxis"
+    },
+    "login": {
+        "signup": "Sign Up",
+        "login": "Login",
+        "username": "Username",
+        "email": "Email",
+        "password": "Password"
+    },
+    "recommendation": {
+        "title": "Get a Recommendation",
+        "age": "Age",
+        "budget": "Budget",
+        "interest": "Interest",
+        "duration": "Duration (days)",
+        "climate": "Climate",
+        "continent": "Continent",
+        "destination_type": "Destination Type",
+        "submit": "Get Recommendation"
+    },
+    "hotels": {
+        "title": "Hotel Reservations",
+        "destination": "Destination",
+        "checkin": "Check-in Date",
+        "checkout": "Check-out Date",
+        "search": "Search",
+        "book": "Book Now"
+    },
+    "currency": {
+        "title": "Currency Converter",
+        "amount": "Amount",
+        "from": "From",
+        "to": "To",
+        "convert": "Convert"
+    },
+    "taxis": {
+        "title": "Taxi Reservations",
+        "pickup": "Pickup Location",
+        "destination": "Destination",
+        "fare": "Proposed Fare",
+        "book": "Book Now"
+    }
+}

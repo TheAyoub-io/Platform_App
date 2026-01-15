@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 data-i18n="taxis.title">Taxi Reservations</h1>
+<form id="taxiBookingForm">
+    <div class="form-group">
+        <label for="pickup" data-i18n="taxis.pickup">Pickup Location</label>
+        <input type="text" class="form-control" id="pickup" placeholder="Enter pickup address">
+    </div>
+    <div class="form-group">
+        <label for="destination" data-i18n="taxis.destination">Destination</label>
+        <input type="text" class="form-control" id="destination" placeholder="Enter destination address">
+    </div>
+    <div class="form-group">
+        <label for="fare" data-i18n="taxis.fare">Proposed Fare</label>
+        <input type="number" class="form-control" id="fare" placeholder="Suggest a price">
+    </div>
+    <button type="submit" class="btn btn-primary" data-i18n="taxis.book">Book Now</button>
+</form>
+<div id="bookingStatus" class="mt-4"></div>
+
+<script>
+document.getElementById('taxiBookingForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    document.getElementById('bookingStatus').innerText = 'Searching for drivers...';
+
+    const response = await fetch('/taxis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}) // No data is actually sent in this simulation
+    });
+
+    const result = await response.json();
+    document.getElementById('bookingStatus').innerText = result.message;
+});
+</script>
+{% endblock %}
